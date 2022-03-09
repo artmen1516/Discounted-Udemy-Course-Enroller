@@ -2,6 +2,7 @@ GUI/pack/__pycache__/
 CLI/__pycache__/
 COLAB/__pycache__/
 GUI/__pycache__/
+CLI/pywhatkit_dbs.txt
 .vscode/
 test/
 .test/

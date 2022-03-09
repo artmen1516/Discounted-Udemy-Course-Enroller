@@ -20,7 +20,7 @@ os.environ['DISPLAY'] = ':0'
 # Dynamic path for settings and requirements
 curPath = pathlib.Path(__file__).parent.resolve()
 requirementsFile = 'requirements.txt'
-settingsFile = 'duce-colab-settings.json'
+settingsFile = '../duce-cli-settings.json'
 
 
 def install(package):
@@ -302,7 +302,7 @@ def load_settings():
 
 
 def save_settings():
-    with open("duce-colab-settings.json", "w") as f:
+    with open(settingsFile, "w") as f:
         json.dump(settings, f, indent=4)
 
 
