@@ -1,4 +1,10 @@
+#!/usr/bin/python3
+import datetime
+import subprocess
+import sys
+
 import json
+from logging import exception
 import os
 import random
 import re
@@ -8,16 +14,43 @@ import traceback
 from decimal import Decimal
 from urllib.parse import parse_qs, unquote, urlsplit
 
-import cloudscraper
-import requests
-from bs4 import BeautifulSoup as bs
-from tqdm import tqdm
+import pathlib
+# For execution in the device main display
+os.environ['DISPLAY'] = ':0'
+# Dynamic path for settings and requirements
+curPath = pathlib.Path(__file__).parent.resolve()
+requirementsFile = 'requirements.txt'
+settingsFile = '../duce-cli-settings.json'
 
-from colors import *
+
+def install(package):
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "-r", package])
+
+
+try:
+    import pywhatkit
+    import cloudscraper
+    import requests
+    from bs4 import BeautifulSoup as bs
+    from tqdm import tqdm
+    from colors import *
+    from prefixsuffix import *
+except:
+    install("requirements.txt")
+    import pywhatkit
+    import cloudscraper
+    import requests
+    from bs4 import BeautifulSoup as bs
+    from tqdm import tqdm
+    from colors import *
+    from prefixsuffix import *
 
 # DUCE-CLI
 
 # Scraper
+
+
 def discudemy():
     global du_links
     du_links = []
@@ -28,7 +61,8 @@ def discudemy():
     }
 
     for page in range(1, 4):
-        r = requests.get("https://www.discudemy.com/all/" + str(page), headers=head)
+        r = requests.get("https://www.discudemy.com/all/" +
+                         str(page), headers=head)
         soup = bs(r.content, "html5lib")
         small_all = soup.find_all("a", {"class": "card-header"})
         big_all.extend(small_all)
@@ -74,7 +108,8 @@ def tutorialbar():
     big_all = []
 
     for page in range(1, 4):
-        r = requests.get("https://www.tutorialbar.com/all-courses/page/" + str(page))
+        r = requests.get(
+            "https://www.tutorialbar.com/all-courses/page/" + str(page))
         soup = bs(r.content, "html5lib")
         small_all = soup.find_all(
             "h3", class_="mb15 mt0 font110 mobfont100 fontnormal lineheight20"
@@ -101,7 +136,8 @@ def real_discount():
     big_all = []
 
     for page in range(1, 3):
-        r = requests.get("https://real.discount/stores/Udemy?page=" + str(page))
+        r = requests.get(
+            "https://real.discount/stores/Udemy?page=" + str(page))
         soup = bs(r.content, "html5lib")
         small_all = soup.find_all("div", class_="col-xl-4 col-md-6")
         big_all.extend(small_all)
@@ -144,7 +180,8 @@ def coursevania():
     ).json()
 
     soup = bs(r["content"], "html5lib")
-    small_all = soup.find_all("div", {"class": "stm_lms_courses__single--title"})
+    small_all = soup.find_all(
+        "div", {"class": "stm_lms_courses__single--title"})
     cv_bar = tqdm(total=len(small_all), desc="Course Vania")
 
     for index, item in enumerate(small_all):
@@ -153,7 +190,8 @@ def coursevania():
         r = requests.get(item.a["href"])
         soup = bs(r.content, "html5lib")
         cv_links.append(
-            title + "|:|" + soup.find("div", {"class": "stm-lms-buy-buttons"}).a["href"]
+            title + "|:|" +
+            soup.find("div", {"class": "stm-lms-buy-buttons"}).a["href"]
         )
     cv_bar.close()
 
@@ -165,10 +203,12 @@ def idcoupons():
     big_all = []
     for page in range(1, 6):
         r = requests.get(
-            "https://idownloadcoupon.com/product-category/udemy-2/page/" + str(page)
+            "https://idownloadcoupon.com/product-category/udemy-2/page/" +
+            str(page)
         )
         soup = bs(r.content, "html5lib")
-        small_all = soup.find_all("a", attrs={"class": "button product_type_external"})
+        small_all = soup.find_all(
+            "a", attrs={"class": "button product_type_external"})
         big_all.extend(small_all)
     idc_bar = tqdm(total=len(big_all), desc="IDownloadCoupons")
 
@@ -188,20 +228,23 @@ def enext() -> list:
     en_links = []
     r = requests.get("https://e-next.in/e/udemycoupons.php")
     soup = bs(r.content, "html5lib")
-    big_all = soup.find("div", {"class": "scroll-box"}).find_all("p", {"class": "p2"})
+    big_all = soup.find("div", {"class": "scroll-box"}
+                        ).find_all("p", {"class": "p2"})
     en_bar = tqdm(total=len(big_all), desc="E-next")
     for i in big_all:
+
+        # Object to add remove suffix functionality
+        myCustomString = myString(i.text[11:].strip())
+
         en_bar.update(1)
-        title = i.text[11:].strip().removesuffix("Enroll Now free").strip()
+        title = (myCustomString.remove_suffix("Enroll Now free"))
+        title = str(title).strip()
         link = i.a["href"]
         en_links.append(title + "|:|" + link)
     en_bar.close()
 
-
 # Constants
-
 version = "v1.7"
-
 
 def create_scrape_obj():
     funcs = {
@@ -234,7 +277,7 @@ def cookiejar(
 
 def load_settings():
     try:
-        with open("duce-cli-settings.json") as f:
+        with open('{}/{}'.format(curPath, settingsFile)) as f:
             settings = json.load(f)
 
     except FileNotFoundError:
@@ -256,7 +299,7 @@ def load_settings():
 
 
 def save_settings():
-    with open("duce-cli-settings.json", "w") as f:
+    with open(settingsFile, "w") as f:
         json.dump(settings, f, indent=4)
 
 
@@ -299,8 +342,17 @@ def affiliate_api(courseid):
         + "/?fields[course]=locale,primary_category,avg_rating_recent,visible_instructors",
     ).json()
 
+    # Method for python>3.9
+    '''
     instructor = (
-        r["visible_instructors"][0]["url"].removeprefix("/user/").removesuffix("/")
+        r["visible_instructors"][0]["url"].removeprefix(
+            "/user/").removesuffix("/")
+    )
+    '''
+    # Method for python<3.9
+    newString = myString(r["visible_instructors"][0]["url"])
+    instructor = (
+        newString.remove_prefix("/user/").remove_suffix("/")
     )
     return (
         r["primary_category"]["title"],
@@ -355,7 +407,9 @@ def check_login(email, password):
         )
         soup = bs(r.text, "html5lib")
 
-        csrf_token = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
+        time.sleep(3)
+        csrf_token = soup.find(
+            "input", {"name": "csrfmiddlewaretoken"})["value"]
 
         data = {
             "csrfmiddlewaretoken": csrf_token,
@@ -364,7 +418,8 @@ def check_login(email, password):
             "password": password,
         }
 
-        s.headers.update({"Referer": "https://www.udemy.com/join/signup-popup/"})
+        s.headers.update(
+            {"Referer": "https://www.udemy.com/join/signup-popup/"})
         try:
             r = s.post(
                 "https://www.udemy.com/join/login-popup/?locale=en_US",
@@ -384,7 +439,8 @@ def check_login(email, password):
                 "accept": "application/json, text/plain, */*",
                 "x-requested-with": "XMLHttpRequest",
                 "x-forwarded-for": str(
-                    ".".join(map(str, (random.randint(0, 255) for _ in range(4))))
+                    ".".join(map(str, (random.randint(0, 255)
+                                       for _ in range(4))))
                 ),
                 "x-udemy-authorization": "Bearer " + r.cookies["access_token"],
                 "content-type": "application/json;charset=UTF-8",
@@ -474,6 +530,7 @@ def free_enroll(courseid):
 
 def auto(list_st):
 
+    coursesList = []
     se_c, ae_c, e_c, ex_c, as_c = 0, 0, 0, 0, 0
     if settings["save_txt"]:
         if not os.path.exists("Courses/"):
@@ -524,6 +581,12 @@ def auto(list_st):
                                 print(fg + "Successfully Enrolled\n")
                                 se_c += 1
                                 as_c += amount
+
+                                # Modificacion: Se agrega curso aniadido a la lista coursesList
+                                courseInfo = tl[0]+' '+tl[1]
+                                coursesList.append(courseInfo)
+                                # Artmen
+
                                 if settings["save_txt"]:
                                     txt_file.write(combo + "\n")
                                     txt_file.flush()
@@ -564,6 +627,12 @@ def auto(list_st):
                                 print(fg + "Successfully Subscribed\n")
                                 se_c += 1
                                 as_c += amount
+
+                                #  Add course suscribed to list course info
+                                courseInfo = tl[0]+' '+tl[1]
+                                coursesList.append(courseInfo)
+                                # Artmen
+
                                 if settings["save_txt"]:
                                     txt_file.write(combo + "\n")
                                     txt_file.flush()
@@ -588,44 +657,64 @@ def auto(list_st):
     print(f"Expired Courses: {e_c}")
     print(f"Excluded Courses: {ex_c}")
 
+    # Message to send in whatsapp
+    message = (
+        f"Successfully Enrolled: {se_c}\n"
+        f"Already Enrolled: {ae_c}\n"
+        f"Amount Saved: ${round(as_c,2)}\n"
+        f"Expired Courses: {e_c}\n"
+        f"Excluded Courses: {ex_c}\n"
+    )
+
+    for x in coursesList:
+        message += x+'\n'
+
+    if settings["send_message"] == True:
+        x = datetime.datetime.now()
+        curHour = x.hour
+        curMinute = x.minute + 2
+        whatsNum = settings["cel_number"]
+
+        if(se_c > 0):
+            try:
+                pywhatkit.sendwhatmsg(
+                    whatsNum, message, curHour, curMinute, 40, True, 10)
+                print("Mensaje Enviado")
+            except:
+                print("Ocurrio Un Error")
+
 
 def random_color():
     col = ["green", "yellow", "white"]
     return random.choice(col)
 
-
 ##########################################
 
 
 def main1():
-    try:
-        links_ls = []
-        for index in funcs:
-            funcs[index].start()
-            time.sleep(0.09)
-        for t in funcs:
-            funcs[t].join()
-        time.sleep(1)
+    links_ls = []
+    for index in funcs:
+        funcs[index].start()
+        time.sleep(0.09)
+    for t in funcs:
+        funcs[t].join()
+    time.sleep(1)
 
-        for link_list in [
-            "du_links",
-            "uf_links",
-            "tb_links",
-            "rd_links",
-            "cv_links",
-            "idc_links",
-            "en_links",
-        ]:
-            try:
-                links_ls += eval(link_list)
-            except:
-                pass
+    for link_list in [
+        "du_links",
+        "uf_links",
+        "tb_links",
+        "rd_links",
+        "cv_links",
+        "idc_links",
+        "en_links",
+    ]:
+        try:
+            links_ls += eval(link_list)
+        except:
+            pass
 
-        auto(remove_duplicates(links_ls))
-
-    except:
-        e = traceback.format_exc()
-        print(e)
+    auto(remove_duplicates(links_ls))
 
 
 settings, instructor_exclude, title_exclude = load_settings()

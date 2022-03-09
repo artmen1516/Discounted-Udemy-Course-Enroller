@@ -5,3 +5,4 @@ colorama
 pyopenssl
 tqdm
 cloudscraper
+pywhatkit
