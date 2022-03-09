@@ -9,8 +9,7 @@ import traceback
 from decimal import Decimal
 from urllib.parse import parse_qs, unquote, urlsplit
 from webbrowser import open as web
-
-import browser_cookie3
+from pack import browser_cookie3
 import cloudscraper
 import PySimpleGUI as sg
 import requests
@@ -227,7 +226,7 @@ def enext() -> list:
 
 ########################### Constants
 
-version = "v1.6"
+version = "v1.7"
 
 
 def create_scrape_obj():
@@ -397,13 +396,13 @@ def manual_login():
     for retry in range(0, 2):
 
         s = cloudscraper.CloudScraper()
+        
         r = s.get(
             "https://www.udemy.com/join/signup-popup/",
         )
         soup = bs(r.text, "html5lib")
-
+        
         csrf_token = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
-
         data = {
             "csrfmiddlewaretoken": csrf_token,
             "locale": "en_US",
@@ -412,6 +411,7 @@ def manual_login():
         }
 
         s.headers.update({"Referer": "https://www.udemy.com/join/signup-popup/"})
+        r = s.get("https://www.udemy.com/join/login-popup/?locale=en_US")
         try:
             r = s.post(
                 "https://www.udemy.com/join/login-popup/?locale=en_US",
@@ -424,7 +424,7 @@ def manual_login():
             return "", r.cookies["client_id"], r.cookies["access_token"], csrf_token
         else:
             soup = bs(r.content, "html5lib")
-            with open("test.txt","w") as f:
+            with open("test.txt", "w") as f:
                 f.write(r.text)
             txt = soup.find(
                 "div", class_="alert alert-danger js-error-alert"
@@ -544,10 +544,13 @@ def auto(list_st):
                 ):
                     if instructor in instructor_exclude:
                         main_window["out"].print(
-                            f"Instructor excluded: {instructor}", text_color="light blue"
+                            f"Instructor excluded: {instructor}",
+                            text_color="light blue",
                         )
                     elif title_in_exclusion(tl[0], title_exclude):
-                        main_window["out"].print("Title Excluded", text_color="light blue")
+                        main_window["out"].print(
+                            "Title Excluded", text_color="light blue"
+                        )
                     elif cat not in categories:
                         main_window["out"].print(
                             f"Category excluded: {cat}", text_color="light blue"
@@ -610,7 +613,7 @@ def auto(list_st):
                                     e_c += 1
 
                             if slp != "":
-                                slp += 5
+                                slp += 3
                                 main_window["out"].print(
                                     ">>> Pausing execution of script for "
                                     + str(slp)
@@ -812,6 +815,9 @@ if (
                     break
 
                 except Exception as e:
+                    
+                    e = traceback.format_exc()
+                    print(e)
                     sg.popup_auto_close(
                         "Make sure you are logged in to udemy.com in chrome browser",
                         title="Error",
