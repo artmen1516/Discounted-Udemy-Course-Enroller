@@ -20,7 +20,7 @@ os.environ['DISPLAY'] = ':0'
 # Dynamic path for settings and requirements
 curPath = pathlib.Path(__file__).parent.resolve()
 requirementsFile = 'requirements.txt'
-settingsFile = '../duce-cli-settings.json'
+settingsFile = 'duce-cli-settings.json'
 
 
 def install(package):
@@ -243,8 +243,10 @@ def enext() -> list:
         en_links.append(title + "|:|" + link)
     en_bar.close()
 
+
 # Constants
 version = "v1.7"
+
 
 def create_scrape_obj():
     funcs = {
@@ -677,8 +679,8 @@ def auto(list_st):
 
         if(se_c > 0):
             try:
-                pywhatkit.sendwhatmsg(
-                    whatsNum, message, curHour, curMinute, 40, True, 10)
+                pywhatkit.sendwhatmsg_instantly(
+                    whatsNum, message, 50, True, 15)
                 print("Mensaje Enviado")
             except:
                 print("Ocurrio Un Error")

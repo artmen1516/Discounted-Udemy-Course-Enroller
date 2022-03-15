@@ -3,6 +3,8 @@ CLI/__pycache__/
 COLAB/__pycache__/
 GUI/__pycache__/
 CLI/pywhatkit_dbs.txt
+pywhatkit_dbs.txt
+PyWhatKit_DB.txt
 .vscode/
 test/
 .test/
